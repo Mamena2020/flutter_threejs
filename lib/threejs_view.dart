@@ -12,6 +12,7 @@ class ThreejsView extends StatefulWidget {
 }
 
 class _ThreejsViewState extends State<ThreejsView> {
+  bool isLoaded = false;
   late three.ThreeJS threeJs;
   late three.OrbitControls orbit;
   late three.PerspectiveCamera cameraPersp;
@@ -32,7 +33,10 @@ class _ThreejsViewState extends State<ThreejsView> {
     super.initState();
     threeJs = three.ThreeJS(
       onSetupComplete: () {
-        setState(() {});
+        setState(() {
+          isLoaded = true;
+          print("LOADED");
+        });
       },
       setup: setup,
       windowResizeUpdate: (newSize) {
@@ -74,29 +78,16 @@ class _ThreejsViewState extends State<ThreejsView> {
     //================================================= set orbit control
     orbit = three.OrbitControls(threeJs.camera, threeJs.globalKey);
     orbit.update();
-    // orbit.addEventListener('change', (event) {
-    //   // threeJs.render(); // make slow
-    //   // orbitUsed = true;
-    //   print("Orbit CHANGEE");
-    // });
-    // orbit.addEventListener("start", (event) {
-    //   print("orbit dragg");
-    //   orbitUsed = true;
-    // });
-    // orbit.addEventListener("end", (event) {
-    //   print("orbit dragg end");
-    //   orbitUsed = false;
-    // });
 
     //================================================= Set Raycaster
     raycaster.params['Points']['threshold'] = threshold;
 
     // final planeGeometry = three.PlaneGeometry(100, 100);
     // final planeMaterial = three.MeshPhongMaterial.fromMap({
-    //   'color': 0x0DAAFF, // 設置顏色
-    //   // 'side': three.DoubleSide, // 使平面的兩面都可見
-    //   // 'opacity': 0.9, // 設置透明度
-    //   // 'transparent': true, // 啟用透明度
+    //   'color': 0x0DAAFF, //
+    //   // 'side': three.DoubleSide, //
+    //   // 'opacity': 0.9, //
+    //   // 'transparent': true, //
     // });
 
     // final planeMesh = three.Mesh(planeGeometry, planeMaterial);
@@ -104,7 +95,7 @@ class _ThreejsViewState extends State<ThreejsView> {
     // threeJs.scene.add(planeMesh);
 
     // add grid
-    // threeJs.scene.add(tHelper.GridHelper(100, 100, 0x888888, 0x444444));
+    threeJs.scene.add(tHelper.GridHelper(100, 100, 0x888888, 0x444444));
 
     //================================================= add axes
     final axesHelper =
@@ -123,7 +114,7 @@ class _ThreejsViewState extends State<ThreejsView> {
     });
     threeJs.scene.add(controlTransform);
 
-    // 監聽 control 的事件
+    // control
     controlTransform.addEventListener('mouseDown', (event) {
       // if using control to modify pos, rot, or size
       controllerClicked = true;
@@ -196,9 +187,7 @@ class _ThreejsViewState extends State<ThreejsView> {
       }
     } else {
       print("Not detect Object");
-      // if (!orbitUsed) {
       controlTransform.detach();
-      // }
     }
     threeJs.render();
   }
@@ -257,12 +246,63 @@ class _ThreejsViewState extends State<ThreejsView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(),
-      body: threeJs.build(),
+      body: Stack(children: [
+        threeJs.build(),
+        if (isLoaded)
+          Align(
+              alignment: Alignment.topLeft,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Container(
+                  decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.all(Radius.circular(10))),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                          onPressed: () {
+                            controlTransform.setMode(GizmoType.translate);
+                            setState(() {});
+                          },
+                          icon: Icon(
+                            Icons.transform,
+                            color: controlTransform.mode == GizmoType.translate
+                                ? Colors.blue
+                                : Colors.black,
+                          )),
+                      IconButton(
+                          onPressed: () {
+                            controlTransform.setMode(GizmoType.rotate);
+                            setState(() {});
+                          },
+                          icon: Icon(
+                            Icons.rotate_90_degrees_ccw,
+                            color: controlTransform.mode == GizmoType.rotate
+                                ? Colors.blue
+                                : Colors.black,
+                          )),
+                      IconButton(
+                          onPressed: () {
+                            controlTransform.setMode(GizmoType.scale);
+                            setState(() {});
+                          },
+                          icon: Icon(
+                            Icons.photo_size_select_small,
+                            color: controlTransform.mode == GizmoType.scale
+                                ? Colors.blue
+                                : Colors.black,
+                          )),
+                    ],
+                  ),
+                ),
+              )),
+      ]),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           addCube();
         },
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ),
     );
   }
