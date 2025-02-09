@@ -13,7 +13,6 @@ class _FbxViewerState extends State<FbxViewer> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     threeJs = three.ThreeJS(
       onSetupComplete: () {
@@ -25,7 +24,6 @@ class _FbxViewerState extends State<FbxViewer> {
 
   @override
   void dispose() {
-    // TODO: implement dispose
     super.dispose();
     threeJs.dispose();
     three.loading.clear();
@@ -81,7 +79,7 @@ class _FbxViewerState extends State<FbxViewer> {
               onPressed: () {
                 Navigator.pop(context);
               },
-              icon: Icon(Icons.arrow_back)),
+              icon: const Icon(Icons.arrow_back)),
         ),
         body: threeJs.build());
   }

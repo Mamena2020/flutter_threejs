@@ -1,6 +1,9 @@
+import 'dart:developer';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:three_js/three_js.dart' as three;
-import 'package:three_js_helpers/three_js_helpers.dart' as tHelper;
+import 'package:three_js_helpers/three_js_helpers.dart' as t_helper;
 import 'package:three_js_transform_controls/three_js_transform_controls.dart';
 import 'dart:math' as math;
 
@@ -35,12 +38,16 @@ class _ThreejsViewState extends State<ThreejsView> {
       onSetupComplete: () {
         setState(() {
           isLoaded = true;
-          print("LOADED");
+          if (kDebugMode) {
+            print("================= SETUP COMPLETED =================");
+          }
         });
       },
       setup: setup,
       windowResizeUpdate: (newSize) {
-        print("windowResizeUpdate====>");
+        if (kDebugMode) {
+          print("================= Window Resize Update =================");
+        }
         final aspect = newSize.width / newSize.height;
 
         threeJs.renderer!.setSize(newSize.width, newSize.height);
@@ -50,6 +57,12 @@ class _ThreejsViewState extends State<ThreejsView> {
 
         threeJs.render();
       },
+      settings: three.Settings(useSourceTexture: true, renderOptions: {
+        "minFilter": three.LinearFilter,
+        "magFilter": three.LinearFilter,
+        "format": three.RGBAFormat,
+        "samples": 4
+      }),
     );
   }
 
@@ -71,6 +84,7 @@ class _ThreejsViewState extends State<ThreejsView> {
 
     //================================================= add scene
     threeJs.scene = three.Scene();
+    threeJs.scene.background = three.Color.fromHex32(0xcccccc);
 
     //================================================= plane
     threeJs.scene.add(createPlane());
@@ -95,11 +109,11 @@ class _ThreejsViewState extends State<ThreejsView> {
     // threeJs.scene.add(planeMesh);
 
     // add grid
-    threeJs.scene.add(tHelper.GridHelper(100, 100, 0x888888, 0x444444));
+    // threeJs.scene.add(tHelper.GridHelper(100, 100, 0x888888, 0x444444));
 
     //================================================= add axes
     final axesHelper =
-        tHelper.AxesHelper(3); // Axis Line (red => X, Green = Y, Blue = Z)
+        t_helper.AxesHelper(3); // Axis Line (red => X, Green = Y, Blue = Z)
     threeJs.scene.add(axesHelper);
 
     //================================================= transform control
@@ -128,8 +142,10 @@ class _ThreejsViewState extends State<ThreejsView> {
     //================================================= Pointer Listener
     threeJs.domElement.addEventListener(three.PeripheralType.pointermove,
         (three.WebPointerEvent event) {
-      print(
-          "Pointer MOVE/////////////////////////////////////////////////////");
+      if (kDebugMode) {
+        print(
+            "Pointer MOVE/////////////////////////////////////////////////////");
+      }
       var deltaX = (event.clientX - pointerOnStart.x).abs();
       var deltaY = (event.clientY - pointerOnStart.y).abs();
 
@@ -142,20 +158,28 @@ class _ThreejsViewState extends State<ThreejsView> {
         (three.WebPointerEvent event) {
       onPointerDown(event);
       isClicked = true;
-      print("Pointer DOWN~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+      if (kDebugMode) {
+        print("Pointer DOWN~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+      }
     });
 
     threeJs.domElement.addEventListener(three.PeripheralType.pointerup,
         (three.WebPointerEvent event) {
-      print("Pointer UP ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+      if (kDebugMode) {
+        print("Pointer UP ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+      }
       // if using control to modify pos, rot, or size -> return here
       if (controllerClicked) return;
 
       if (isClicked) {
-        print("Is Clicked............................");
+        if (kDebugMode) {
+          print("Is Clicked............................");
+        }
         detectObjectRaycast(event);
       } else {
-        print("Is Dragg............................");
+        if (kDebugMode) {
+          print("Is Dragg............................");
+        }
       }
     });
   }
@@ -183,10 +207,29 @@ class _ThreejsViewState extends State<ThreejsView> {
     if (intersects.isNotEmpty) {
       final object = intersects[0].object;
       if (object != controlTransform.object) {
-        controlTransform.attach(object);
+        // if (object!.parent != null && object.parent is three.Group) {
+        //   print("Hit Group Obeject");
+        //   controlTransform.attach(object.parent);
+        // } else {
+        //   print("Hit Single Mesh Object");
+        //   controlTransform.attach(object);
+        // }
+        if (object!.parent != null && object.parent is three.Scene) {
+          if (kDebugMode) {
+            print("Hit Single Mesh Object");
+          }
+          controlTransform.attach(object);
+        } else {
+          if (kDebugMode) {
+            print("Hit Group Obeject");
+          }
+          controlTransform.attach(object.parent);
+        }
       }
     } else {
-      print("Not detect Object");
+      if (kDebugMode) {
+        print("Not detect Objec - Release Control Transform");
+      }
       controlTransform.detach();
     }
     threeJs.render();
@@ -242,10 +285,118 @@ class _ThreejsViewState extends State<ThreejsView> {
     Colors.green,
   ];
 
+  void cloneObject3D() {
+    final object = controlTransform.object;
+    if (object == null) return;
+    inspect(object);
+    if (object.parent is three.Scene && object.children.isEmpty) {
+      if (kDebugMode) {
+        print("Clone as Single 3D Object");
+      }
+      final newObject = object.clone(true);
+      objects.add(newObject);
+
+      controlTransform.attach(newObject);
+      controlTransform.setMode(GizmoType.translate);
+
+      threeJs.scene.add(newObject);
+
+      threeJs.render();
+    } else {
+      if (kDebugMode) {
+        print("Clone as Group");
+      }
+      final newObject = object.clone(true); // clone parent as Object3D
+
+      newObject.name = "Rack_${objects.length}";
+
+      for (var obj in newObject.children) {
+        objects.add(obj);
+      }
+
+      controlTransform.attach(newObject);
+      controlTransform.setMode(GizmoType.translate);
+
+      threeJs.scene.add(newObject);
+      threeJs.render();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        actions: [
+          IconButton(
+              onPressed: () async {
+                // final fbxLoader = three.FBXLoader(
+                // width: threeJs.width.toInt(),
+                // height: threeJs.height.toInt(),
+                // );
+                // final modelAsset = await fbxLoader
+                //     .fromAsset('assets/model/SambaDancing.fbx'); // works
+
+                // final modelAsset =
+                //     await fbxLoader.fromAsset('assets/model/carA.fbx');
+
+                final three.OBJLoader objLoader = three.OBJLoader();
+                final three.Group? modelAsset = await objLoader
+                    .fromAsset("assets/model/rack1.obj"); // works
+
+                // final loader = three.FBXLoader();
+                // final modelAsset = await loader.fromAsset('assets/model/carA.fbx');
+                if (modelAsset == null) {
+                  if (kDebugMode) {
+                    print("MODEL ASSET NOT LOADED");
+                  }
+                  return;
+                }
+
+                if (kDebugMode) {
+                  print("MODEL ASSET LOADED");
+                }
+                // final model3D = modelAsset.parent;
+                final model3D = modelAsset;
+
+                model3D.name = "Rack_${objects.length}";
+                // model3D.castShadow = true;
+                // model3D.receiveShadow = true;
+                model3D.scale.setScalar(0.01);
+
+                model3D.traverse((child) {
+                  if (child is three.Mesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                    child.material = three.MeshBasicMaterial.fromMap({
+                      "color": Colors.blueGrey.value,
+                      // 'side': three.DoubleSide,
+                    });
+                  }
+                });
+
+                // await loader.fromAsset( 'assets/models/fbx/nurbs.fbx').then(( object ) {
+                //   threeJs.scene.add( object );
+                // } );
+
+                for (var obj in model3D.children) {
+                  objects.add(obj);
+                }
+
+                // inspect(model3D);
+                controlTransform.attach(model3D);
+                controlTransform.setMode(GizmoType.translate);
+
+                threeJs.scene.add(model3D);
+                threeJs.render();
+              },
+              icon: const Icon(Icons.view_in_ar)),
+          IconButton(
+              onPressed: () {
+                cloneObject3D();
+              },
+              icon: const Icon(Icons.copy)),
+        ],
+      ),
       body: Stack(children: [
         threeJs.build(),
         if (isLoaded)
