@@ -40,8 +40,9 @@ dependencies:
   # webview_windows: ^0.4.0
   
   three_js: ^0.0.6
-  three_js_helpers: ^0.0.5
-  three_js_transform_controls: ^0.0.3
+  three_js_helpers: ^0.0.5 # grid, axes etc
+  three_js_transform_controls: ^0.0.3 # control object
+  three_js_postprocessing: ^0.0.2
 
 dev_dependencies:
   flutter_test:
@@ -75,6 +76,7 @@ flutter:
     - assets/web/three.min.js
     - assets/model/rack1.fbx
     - assets/model/rack1.obj
+    - assets/model/rackA.obj
     - assets/model/carA.fbx
     - assets/model/SambaDancing.fbx
     # - assets/web/js/three.module.min.js

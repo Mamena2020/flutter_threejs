@@ -565,6 +565,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.0.3"
+  three_js_postprocessing:
+    dependency: "direct main"
+    description:
+      name: three_js_postprocessing
+      sha256: cdd1455cb0e84c95c7905dea6920c0ea3c31a4bf7409e6a234d8bdfc47fedff0
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.2"
   three_js_simple_loaders:
     dependency: transitive
     description:

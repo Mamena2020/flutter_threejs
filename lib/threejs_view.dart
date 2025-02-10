@@ -1,10 +1,12 @@
-import 'dart:developer';
+// import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:three_js/three_js.dart' as three;
 import 'package:three_js_helpers/three_js_helpers.dart' as t_helper;
 import 'package:three_js_transform_controls/three_js_transform_controls.dart';
+// import 'package:three_js_postprocessing/three_js_postprocessing.dart';
+// import 'package:test_threejs/outlinepass.dart';
 import 'dart:math' as math;
 
 class ThreejsView extends StatefulWidget {
@@ -57,12 +59,6 @@ class _ThreejsViewState extends State<ThreejsView> {
 
         threeJs.render();
       },
-      settings: three.Settings(useSourceTexture: true, renderOptions: {
-        "minFilter": three.LinearFilter,
-        "magFilter": three.LinearFilter,
-        "format": three.RGBAFormat,
-        "samples": 4
-      }),
     );
   }
 
@@ -75,25 +71,26 @@ class _ThreejsViewState extends State<ThreejsView> {
     super.dispose();
   }
 
+  //------------------------------------------------------------------------------------------------ setup
   void setup() {
-    // set camera
+    //============================================================================ set camera
     cameraPersp =
         three.PerspectiveCamera(45, threeJs.width / threeJs.height, 1, 2200);
     threeJs.camera = cameraPersp;
     threeJs.camera.position.setValues(0, 2, 10);
 
-    //================================================= add scene
+    //============================================================================ add scene
     threeJs.scene = three.Scene();
     threeJs.scene.background = three.Color.fromHex32(0xcccccc);
 
-    //================================================= plane
+    //============================================================================ plane
     threeJs.scene.add(createPlane());
 
-    //================================================= set orbit control
+    //============================================================================ set orbit control
     orbit = three.OrbitControls(threeJs.camera, threeJs.globalKey);
     orbit.update();
 
-    //================================================= Set Raycaster
+    //============================================================================ Set Raycaster
     raycaster.params['Points']['threshold'] = threshold;
 
     // final planeGeometry = three.PlaneGeometry(100, 100);
@@ -107,16 +104,41 @@ class _ThreejsViewState extends State<ThreejsView> {
     // final planeMesh = three.Mesh(planeGeometry, planeMaterial);
     // planeMesh.rotation.x = math.pi / 2;
     // threeJs.scene.add(planeMesh);
+//============================================================================ Light
+    final light1 = three.DirectionalLight(0xffffff, 1);
+    light1.position.setFrom(three.Vector3(10, 10, 10)).normalize();
+    threeJs.scene.add(light1);
 
+    final light2 = three.DirectionalLight(0xffffff, 1);
+    light2.position.setFrom(three.Vector3(-10, 10, -10)).normalize();
+    threeJs.scene.add(light2);
+
+    // final light = three.PointLight(0xffffff, 1, 10);
+    // light.position.setFrom(three.Vector3(2, 2, 2)).normalize();
+    // threeJs.scene.add(light);
+
+    // final composer = EffectComposer(threeJs.renderer!);
+    // composer.addPass(RenderPass(threeJs.scene, threeJs.camera));
+
+    // final outlinePass = OutlinePass(
+    //     three.Vector2(threeJs.width / threeJs.height),
+    //     threeJs.scene,
+    //     threeJs.camera);
+    // outlinePass.edgeStrength = 3;
+    // outlinePass.edgeGlow = 1;
+    // outlinePass.visibleEdgeColor.add(three.Color(0xff0000));
+    // composer.addPass(outlinePass);
+    // composer.render(threeJs.renderTarget);
+    //============================================================================ Add grid
     // add grid
     // threeJs.scene.add(tHelper.GridHelper(100, 100, 0x888888, 0x444444));
 
-    //================================================= add axes
+    //============================================================================ add axes
     final axesHelper =
         t_helper.AxesHelper(3); // Axis Line (red => X, Green = Y, Blue = Z)
     threeJs.scene.add(axesHelper);
 
-    //================================================= transform control
+    //============================================================================ transform control
     controlTransform = TransformControls(threeJs.camera, threeJs.globalKey);
     controlTransform.addEventListener('change', (event) {
       // threeJs.render();// make slow
@@ -139,7 +161,7 @@ class _ThreejsViewState extends State<ThreejsView> {
       controllerClicked = false;
     });
 
-    //================================================= Pointer Listener
+    //============================================================================ Pointer Listener
     threeJs.domElement.addEventListener(three.PeripheralType.pointermove,
         (three.WebPointerEvent event) {
       if (kDebugMode) {
@@ -184,6 +206,8 @@ class _ThreejsViewState extends State<ThreejsView> {
     });
   }
 
+  //------------------------------------------------------------------------------------------------ end of setup
+
   var pointerOnStart = three.Vector2();
   bool isClicked = false;
 
@@ -194,7 +218,10 @@ class _ThreejsViewState extends State<ThreejsView> {
 
   void onPointerUp(three.WebPointerEvent event) {
     pointer.x = (event.clientX / threeJs.width) * 2 - 1;
-    pointer.y = -(event.clientY / threeJs.height) * 2 + 1;
+    // pointer.y = -(event.clientY / threeJs.height) * 2 + 1;
+
+    // for reduce with height of scaffold-> appbar 0.9
+    pointer.y = -(event.clientY / threeJs.height) * 2 + 0.9;
   }
 
   void detectObjectRaycast(three.WebPointerEvent event) {
@@ -207,13 +234,6 @@ class _ThreejsViewState extends State<ThreejsView> {
     if (intersects.isNotEmpty) {
       final object = intersects[0].object;
       if (object != controlTransform.object) {
-        // if (object!.parent != null && object.parent is three.Group) {
-        //   print("Hit Group Obeject");
-        //   controlTransform.attach(object.parent);
-        // } else {
-        //   print("Hit Single Mesh Object");
-        //   controlTransform.attach(object);
-        // }
         if (object!.parent != null && object.parent is three.Scene) {
           if (kDebugMode) {
             print("Hit Single Mesh Object");
@@ -224,15 +244,17 @@ class _ThreejsViewState extends State<ThreejsView> {
             print("Hit Group Obeject");
           }
           controlTransform.attach(object.parent);
+          threeJs.render();
         }
       }
     } else {
       if (kDebugMode) {
-        print("Not detect Objec - Release Control Transform");
+        print("Not detect Object - Release Control Transform");
       }
+
       controlTransform.detach();
+      threeJs.render();
     }
-    threeJs.render();
   }
 
   List<three.Object3D> objects = [];
@@ -244,9 +266,16 @@ class _ThreejsViewState extends State<ThreejsView> {
 
     var rand = math.Random().nextInt(colors.length);
 
-    // var meshMat = three.MeshBasicMaterial.fromMap({"color": 0x0FFFdF});
-    var meshMat =
-        three.MeshBasicMaterial.fromMap({"color": colors[rand].value});
+    // var meshMat = three.MeshBasicMaterial.fromMap({"color": 0x0FFFdF,
+    //  // "wireframe": true,
+    // });
+    var meshMat = three.MeshStandardMaterial.fromMap({
+      "color": colors[rand].value,
+      "roughness": 3, // Semakin besar, semakin kasar-> sudut makin kelihatan
+      "metalness": 0.8, // Semakin besar, semakin logam,
+      // "wireframe": true,
+    });
+
     return three.Mesh(boxGeo, meshMat)..name = "cube_$objectCount";
   }
 
@@ -288,7 +317,7 @@ class _ThreejsViewState extends State<ThreejsView> {
   void cloneObject3D() {
     final object = controlTransform.object;
     if (object == null) return;
-    inspect(object);
+    // inspect(object);
     if (object.parent is three.Scene && object.children.isEmpty) {
       if (kDebugMode) {
         print("Clone as Single 3D Object");
@@ -322,11 +351,76 @@ class _ThreejsViewState extends State<ThreejsView> {
     }
   }
 
+  void deleteObject() {
+    final object = controlTransform.object;
+    if (object == null) return;
+
+    if (object.parent is three.Scene && object.children.isEmpty) {
+      if (kDebugMode) {
+        print("Delete  Single 3D Object");
+      }
+
+      objects.removeWhere((e) => e.uuid == object.uuid);
+
+      controlTransform.detach();
+
+      threeJs.scene.remove(object);
+
+      threeJs.render();
+    } else {
+      if (kDebugMode) {
+        print("Delete as Group");
+      }
+      objects.removeWhere(
+          (e) => e.parent!.uuid == object.uuid); // remove all children
+
+      objects.removeWhere((e) => e.uuid == object.uuid); // remove parent
+
+      controlTransform.detach();
+
+      threeJs.scene.remove(object);
+
+      threeJs.render();
+    }
+  }
+
+  final materialStd = three.MeshStandardMaterial.fromMap({
+    "color": Colors.blueGrey.value,
+    "roughness": 1, // Semakin besar, semakin kasar
+    "metalness": 0.8, // Semakin besar, semakin logam
+  });
+  final materialPhong = three.MeshPhongMaterial.fromMap({
+    "color": Colors.blueGrey.value,
+    "shininess": 50, // Semakin besar, semakin mengkilap
+    "specular": 0xffffff // Warna pantulan cahaya
+  });
+
+  final materialLamb = three.MeshLambertMaterial.fromMap({
+    "color": Colors.blueGrey.value,
+  });
+
+  final materialPhy = three.MeshPhysicalMaterial.fromMap({
+    "color": Colors.blueGrey.value,
+    "transmission": 0.9, // Transparansi seperti kaca
+    "clearcoat": 1, // Lapisan mengkilap tambahan
+    "clearcoatRoughness": 0.1
+  });
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         actions: [
+          IconButton(
+              onPressed: () {
+                deleteObject();
+              },
+              icon: const Icon(Icons.delete)),
+          IconButton(
+              onPressed: () {
+                cloneObject3D();
+              },
+              icon: const Icon(Icons.copy)),
           IconButton(
               onPressed: () async {
                 // final fbxLoader = three.FBXLoader(
@@ -341,7 +435,8 @@ class _ThreejsViewState extends State<ThreejsView> {
 
                 final three.OBJLoader objLoader = three.OBJLoader();
                 final three.Group? modelAsset = await objLoader
-                    .fromAsset("assets/model/rack1.obj"); // works
+                    .fromAsset("assets/model/rackA.obj"); // works
+                // .fromAsset("assets/model/rack1.obj"); // works
 
                 // final loader = three.FBXLoader();
                 // final modelAsset = await loader.fromAsset('assets/model/carA.fbx');
@@ -361,16 +456,14 @@ class _ThreejsViewState extends State<ThreejsView> {
                 model3D.name = "Rack_${objects.length}";
                 // model3D.castShadow = true;
                 // model3D.receiveShadow = true;
-                model3D.scale.setScalar(0.01);
+                // model3D.scale.setScalar(0.01);
+                model3D.scale.setScalar(0.12);
 
                 model3D.traverse((child) {
                   if (child is three.Mesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                    child.material = three.MeshBasicMaterial.fromMap({
-                      "color": Colors.blueGrey.value,
-                      // 'side': three.DoubleSide,
-                    });
+                    // child.castShadow = true;
+                    // child.receiveShadow = true;
+                    child.material = materialStd;
                   }
                 });
 
@@ -390,11 +483,6 @@ class _ThreejsViewState extends State<ThreejsView> {
                 threeJs.render();
               },
               icon: const Icon(Icons.view_in_ar)),
-          IconButton(
-              onPressed: () {
-                cloneObject3D();
-              },
-              icon: const Icon(Icons.copy)),
         ],
       ),
       body: Stack(children: [
