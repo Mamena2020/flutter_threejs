@@ -22,5 +22,5 @@ samples, guidance on mobile development, and a full API reference.
 </p>
 
 <p align="center">
-     <img src="/ssMobile.jpg">
+     <img src="/ssMobile.jpg" width="300px">
 </p>
