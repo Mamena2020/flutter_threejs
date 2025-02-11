@@ -74,11 +74,8 @@ flutter:
     - assets/web/three.module.min.js
     - assets/web/three.core.min.js
     - assets/web/three.min.js
-    - assets/model/rack1.fbx
     - assets/model/rack1.obj
     - assets/model/rackA.obj
-    - assets/model/carA.fbx
-    - assets/model/SambaDancing.fbx
     # - assets/web/js/three.module.min.js
 
   # An image asset can refer to one or more resolution-specific "variants", see

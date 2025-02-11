@@ -18,9 +18,9 @@ samples, guidance on mobile development, and a full API reference.
 ## Demo
 
 <p align="center">
-     <img src="/ss.png">
+     <img src="/ssDesktop.png">
 </p>
 
 <p align="center">
-     <img src="/ssMobile.jpg" width="300px">
+     <img src="/ssAppMobile.jpg" width="300px">
 </p>
