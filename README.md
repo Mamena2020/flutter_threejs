@@ -18,7 +18,7 @@ samples, guidance on mobile development, and a full API reference.
 ## Demo
 
 <p align="center">
-     <img src="/ssDesktop.png">
+     <img src="/ssDesktop.PNG">
 </p>
 
 <p align="center">
